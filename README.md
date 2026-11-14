@@ -1,32 +1,67 @@
-# Multi-Group Permutation Test (permKsamp)
+# permk — Permutation Tests for k Independent Samples
 
-## Overview
-The `permKsamp` function is designed for conducting permutation tests on numeric data with multiple group assignments. This README provides a brief overview of the algorithm and its usage.
+[![R-CMD-check](https://github.com/ep2si10n/multigroup-permutation-test/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/ep2si10n/multigroup-permutation-test/actions/workflows/R-CMD-check.yml)
 
-## How it Works
-1. **Input Data:**
-   - `x`: A numeric vector containing the data to be analyzed.
-   - `grupos`: A vector indicating which group each observation in `x` belongs to.
+A small R package for **distribution-free comparison of several groups**. Use it when ANOVA or t-test
+assumptions (normality, equal variances) are doubtful, or when you need a statistic with no closed-form
+null distribution.
 
-2. **Parameters:**
-   - `myfun`: The statistic of interest (default is mean).
-   - `nsamp`: Number of permutations to be performed.
-   - `alternativa`: Vector specifying the alternative for each group ("bilateral," "unil.inferior," or "unil.superior").
-   - `seed`: Seed for result reproducibility.
+## Features
 
-3. **Algorithm Steps:**
-   - Factorize groups to ensure correct identification of levels.
-   - Calculate the statistic of interest for the observed data.
-   - Generate permutations and calculate the statistic for each permutation.
-   - Center observed and permuted statistics.
-   - Visualize permutations through histograms with observed statistics marked in red.
-   - Calculate the proportion of less extreme permutations for each group.
+- **`perm_test()`**: global k-sample test. Under H₀ the group labels are exchangeable, so the package permutes them
+  and builds the null distribution of:
+  - the **F statistic** (default),
+  - the **Kruskal–Wallis H**,
+  - the **range of group means**,
+  - or **any function `f(x, g)` you supply**.
+- **`pairwise_perm_test()`**: post-hoc two-sample tests for every pair of groups (difference of means, medians or
+  any location function). One- or two-sided, with **Holm** (or any `p.adjust`) correction for multiple comparisons.
+- **Valid p-values** via the `(b + 1) / (m + 1)` estimator (Phipson & Smyth, 2010). They are never exactly 0.
+- `print` and `plot` methods. The plot shows the null histogram with the observed statistic marked.
+- Input validation, reproducible results through `seed`, and a testthat suite checked on every push with R CMD check.
 
-4. **Usage Example:**
-   ```R
-   set.seed(123)
-   # Case 1: Difference of means
-   resultados_perm_means <- perm4samp(x = heart$age, grupos = heart$cp, myfun = meandif)
-   
-   # Case 2: Difference of medians
-   resultados_perm_medians <- perm4samp(x = heart$age, grupos = heart$cp, myfun = median_difer)
+## Installation
+
+```r
+# install.packages("remotes")
+remotes::install_github("ep2si10n/multigroup-permutation-test")
+```
+
+## Example
+
+```r
+library(permk)
+
+# Do the three PlantGrowth groups differ?
+res <- perm_test(PlantGrowth$weight, PlantGrowth$group, nperm = 9999, seed = 1)
+res          # permutation p ≈ 0.017, close to the classical ANOVA p = 0.016
+plot(res)
+
+# Which pairs differ? Holm-adjusted post-hoc tests
+pairwise_perm_test(PlantGrowth$weight, PlantGrowth$group, seed = 1)
+
+# Robust version: medians and a rank statistic
+perm_test(InsectSprays$count, InsectSprays$spray, stat = "kruskal", seed = 1)
+pairwise_perm_test(InsectSprays$count, InsectSprays$spray, fun = median, seed = 1)
+
+# Custom statistic: spread of the group medians
+perm_test(PlantGrowth$weight, PlantGrowth$group,
+          stat = function(x, g) var(tapply(x, g, median)))
+```
+
+## How it is validated
+
+The test suite (`tests/testthat`) checks that:
+
+- the F and Kruskal–Wallis statistics match `stats::anova` and `stats::kruskal.test` exactly;
+- the permutation p-value on `PlantGrowth` agrees with classical ANOVA;
+- under the null hypothesis, the rejection rate at α = 0.05 stays close to nominal;
+- a real shift between groups is detected;
+- Holm-adjusted p-values are never below the raw ones, and one-sided alternatives point the right way;
+- bad inputs raise clear errors.
+
+## History
+
+Started in 2023 as a statistics coursework script. That version mixed Markdown and R in one file, so it did not run,
+and despite its name it only compared the first two groups. The 2026 rewrite turned it into an installable package
+with a true k-sample test, post-hoc pairwise comparisons, tests and CI.

@@ -1,0 +1,4 @@
+export(pairwise_perm_test)
+export(perm_test)
+S3method(plot, perm_test)
+S3method(print, perm_test)
