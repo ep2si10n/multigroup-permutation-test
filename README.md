@@ -118,6 +118,14 @@ validation, tests and continuous integration.
   Genetics and Molecular Biology, 9(1).
 - Holm, S. (1979). *A simple sequentially rejective multiple test procedure*. Scandinavian Journal of Statistics, 6(2).
 
+## Contributing
+
+Issues and pull requests are welcome. Before opening a PR, please run the checks locally:
+
+```bash
+Rscript -e 'devtools::check()'   # or: R CMD build . && R CMD check permk_*.tar.gz
+```
+
 ## License
 
 Released under the [MIT License](LICENSE.md).
